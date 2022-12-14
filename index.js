@@ -41,7 +41,7 @@ const processMessage = (message, callback) => {
 
     const databaseNameRegex = /use\s+(\w*)\;?/g;
 
-    const databaseName = query.match(databaseNameRegex) ? query.match(databaseNameRegex)[0].split(" ")[1] : "unknown";
+    const databaseName = query.match(databaseNameRegex) ? query.match(databaseNameRegex)[0].split(" ")[1] : null;
 
     let markedQuery = query;
 
