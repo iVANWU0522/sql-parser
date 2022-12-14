@@ -49,7 +49,7 @@ const processMessage = (message, callback) => {
 
     const matchedSlots = markedQuery.match(regex);
 
-    if (!matchedSlots) {
+    if (matchedSlots) {
         matchedSlots.forEach((slot) => {
             const key = slot.split(" ")[0];
             markedQuery = markedQuery.replace(slot, `${key} ****`);
