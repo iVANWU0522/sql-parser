@@ -44,10 +44,12 @@ exports.handler = (event, context, callback) => {
 
     const matchedSlots = str.match(regex);
 
-    matchedSlots.forEach((slot) => {
-        const key = slot.split(" ")[0];
-        str = str.replace(slot, `${key} ****`);
-    });
+    if (!matchedSlots) {
+        matchedSlots.forEach((slot) => {
+            const key = slot.split(" ")[0];
+            str = str.replace(slot, `${key} ****`);
+        });
+    }
 
     const sql = `INSERT INTO slow_query(time, user, event_log_id, query_time, lock_time, rows_sent, rows_examined, marked_query, original_query, database_name) VALUES('${time}', '${user}', ${id}, ${queryTime}, ${lockTime}, ${rowsSent}, ${rowsExamined}, "${str}", "${query}", '${databaseName}');`;
     // allows for using callbacks as finish/error-handlers
