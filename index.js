@@ -9,14 +9,14 @@ const con = mysql.createConnection({
     database: process.env.RDS_DATABASE
 });
 
-exports.handler = async (event, context, callback) => {
+exports.handler = (event, context, callback) => {
     const payload = Buffer.from(event.awslogs.data, 'base64');
     const parsed = JSON.parse(zlib.gunzipSync(payload).toString('utf8'));
     console.log('Decoded payload:', JSON.stringify(parsed));
 
     const eventMessage = parsed.logEvents[0].message;
 
-    const timeRegex = /\# Time: (\d*-\d*-\d*T\d*:\d*:\d*.\d*Z)/g;
+    const timeRegex = /\# Time: (\d*-\d*-\d*T\d*:\d*:\d*.\d*Z)\#?/g;
     const userRegex = /\# User@Host: (\S*\[\S*\] @  \[\d*.\d*.\d*.\d*])/g;
     const idRegex = /Id:\s\d*/g;
     const queryTimeRegex = /\# Query_time: (\d|\.)*\s+Lock/g;
@@ -34,6 +34,10 @@ exports.handler = async (event, context, callback) => {
     const rowsExamined = eventMessage.match(rowsExaminedRegex)[0].split(" ")[1];
     const query = eventMessage.match(queryRegex)[0];
 
+    const databaseNameRegex = /use\s+(\w*)\;?/g;
+
+    const databaseName = query.match(databaseNameRegex)[0].split(" ")[1];
+
     let str = query;
 
     const regex = /(=|<>|<|>|<=|>=|BETWEEN|between|LIKE|like|IN|in)\s+(\d|'([^']*)'|\('[^']*'\))/g;
@@ -45,15 +49,20 @@ exports.handler = async (event, context, callback) => {
         str = str.replace(slot, `${key} ****`);
     });
 
-    const sql = `INSERT INTO slow_query(time, user, event_log_id, query_time, lock_time, rows_sent, rows_examined, marked_query) VALUES(${time}, ${user}, ${id}, ${queryTime}, ${lockTime}, ${rowsSent}, ${rowsExamined}, ${str});`;
+    const sql = `INSERT INTO slow_query(time, user, event_log_id, query_time, lock_time, rows_sent, rows_examined, marked_query, original_query, database_name) VALUES('${time}', '${user}', ${id}, ${queryTime}, ${lockTime}, ${rowsSent}, ${rowsExamined}, "${str}", "${query}", '${databaseName}');`;
     // allows for using callbacks as finish/error-handlers
-    context.callbackWaitsForEmptyEventLoop = false;
-    con.query(sql, (err, res) => {
-        if (err) {
-            throw err
+    // context.callbackWaitsForEmptyEventLoop = false;
+
+    con.query(sql, function (error, results, fields) {
+        if (error) {
+            con.destroy();
+            throw error;
+        } else {
+            console.log(results);
+            callback(error, results);
+            con.end(function (err) { callback(err, results); });
         }
-        callback(null, '1 records inserted.');
-    })
+    });
 
     return `Successfully processed ${parsed.logEvents.length} log events.`;
 };
