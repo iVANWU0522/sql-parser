@@ -1,4 +1,13 @@
 const zlib = require('zlib');
+const mysql = require('mysql');
+
+const con = mysql.createConnection({
+    host: process.env.RDS_HOSTNAME,
+    user: process.env.RDS_USERNAME,
+    password: process.env.RDS_PASSWORD,
+    port: process.env.RDS_PORT,
+    database: process.env.RDS_DATABASE
+});
 
 exports.handler = async (event, context) => {
     const payload = Buffer.from(event.awslogs.data, 'base64');
@@ -35,6 +44,14 @@ exports.handler = async (event, context) => {
         const key = slot.split(" ")[0];
         str = str.replace(slot, `${key} ****`);
     });
+
+    const sql = `INSERT INTO slow_query(time, user, event_log_id, query_time, lock_time, rows_sent, rows_examined, marked_query) VALUES(${time}, ${user}, ${id}, ${queryTime}, ${lockTime}, ${rowsSent}, ${rowsExamined}, ${str});`;
+    con.query(sql, (err, res) => {
+        if (err) {
+            throw err
+        }
+        callback(null, '1 records inserted.');
+    })
 
     return `Successfully processed ${parsed.logEvents.length} log events.`;
 };
