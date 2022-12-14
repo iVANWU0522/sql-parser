@@ -9,7 +9,7 @@ const con = mysql.createConnection({
     database: process.env.RDS_DATABASE
 });
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, context, callback) => {
     const payload = Buffer.from(event.awslogs.data, 'base64');
     const parsed = JSON.parse(zlib.gunzipSync(payload).toString('utf8'));
     console.log('Decoded payload:', JSON.stringify(parsed));
@@ -46,6 +46,8 @@ exports.handler = async (event, context) => {
     });
 
     const sql = `INSERT INTO slow_query(time, user, event_log_id, query_time, lock_time, rows_sent, rows_examined, marked_query) VALUES(${time}, ${user}, ${id}, ${queryTime}, ${lockTime}, ${rowsSent}, ${rowsExamined}, ${str});`;
+    // allows for using callbacks as finish/error-handlers
+    context.callbackWaitsForEmptyEventLoop = false;
     con.query(sql, (err, res) => {
         if (err) {
             throw err
