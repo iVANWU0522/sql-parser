@@ -25,7 +25,7 @@ const processMessage = (message, callback) => {
     const userRegex = /\# User@Host: (\S*\[\S*\] @  \[\d*.\d*.\d*.\d*])/g;
     const idRegex = /Id:\s\d*/g;
     const queryTimeRegex = /\# Query_time: (\d|\.)*\s+Lock/g;
-    const lockTimeRegex = /Lock_time: (\d|\.)*\s+Rows/g
+    const lockTimeRegex = /Lock_time: (\d|\.)*\s+Rows/g;
     const rowsSentRegex = /Rows_sent: (\d|\.)*\s+Rows/g;
     const rowsExaminedRegex = /Rows_examined: (\d|\.)*\s+/g;
     const queryRegex = /(use|USE|set|SET)\s+(.|(\r\n|\r|\n))*/g;
@@ -70,4 +70,4 @@ const processMessage = (message, callback) => {
             con.end(function (err) { callback(err, results); });
         }
     });
-}
+};
